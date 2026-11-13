@@ -12,7 +12,7 @@ export default function Home() {
 
         {/* 소개글 */}
         <p className="text-gray-600 text-base leading-relaxed">
-          안녕하세요! 바이브 코딩을 배우고 있는 대학생입니다!
+          안녕하세요! 사용자 중심의 웹 서비스를 만드는 개발자입니다.
         </p>
       </main>
     </div>
