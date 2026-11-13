@@ -1,26 +1,82 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  /* TDS Canonical Palette (OKLCH / Hex mapped) */
+  --tds-blue-500: oklch(0.620 0.191 258); /* #3182F6 */
+  --tds-blue-600: oklch(0.522 0.176 257);
+  --tds-blue-50: oklch(0.959 0.020 250); /* #E8F3FF */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --tds-grey-900: oklch(0.237 0.020 258); /* #191F28 */
+  --tds-grey-800: oklch(0.357 0.028 257); /* #333D4B */
+  --tds-grey-700: oklch(0.460 0.028 256); /* #4E5968 */
+  --tds-grey-600: oklch(0.562 0.025 254); /* #6B7684 */
+  --tds-grey-500: oklch(0.666 0.021 253); /* #8B95A1 */
+  --tds-grey-400: oklch(0.779 0.016 251); /* #B0B8C1 */
+  --tds-grey-300: oklch(0.874 0.009 248); /* #D1D6DB */
+  --tds-grey-200: oklch(0.930 0.005 248); /* #E5E8EB */
+  --tds-grey-100: oklch(0.966 0.003 248); /* #F2F4F6 */
+  --tds-grey-50: oklch(0.985 0.002 248); /* #F9FAFB */
+  --tds-white: oklch(1.000 0.000 0);
+
+  --tds-yellow-500: oklch(0.850 0.154 82); /* #FFC342 */
+  --tds-green-500: oklch(0.493 0.143 154);
+  --tds-red-500: oklch(0.641 0.208 21); /* #F04452 */
+
+  /* Adaptive Roles */
+  --tds-bg-canvas: var(--tds-grey-100);
+  --tds-bg-surface: var(--tds-white);
+  --tds-bg-secondary: var(--tds-grey-100);
+  --tds-fg-primary: var(--tds-grey-900);
+  --tds-fg-secondary: var(--tds-grey-700);
+  --tds-fg-tertiary: oklch(0.155 0.060 261 / 0.58);
+  --tds-border-hairline: var(--tds-grey-200);
+  --tds-press-overlay: oklch(0.000 0.000 0 / 0.26);
+
+  /* Motion tokens */
+  --tds-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --tds-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --tds-blue-500: oklch(0.630 0.192 258); /* #3485FA */
+    --tds-blue-50: oklch(0.300 0.062 267); /* #202C4D */
+
+    --tds-grey-900: oklch(1.000 0.000 0); /* #FFFFFF */
+    --tds-grey-800: oklch(0.919 0.001 286); /* #E4E4E5 */
+    --tds-grey-700: oklch(0.818 0.004 286); /* #C3C3C6 */
+    --tds-grey-600: oklch(0.701 0.009 286); /* #9E9EA4 */
+    --tds-grey-500: oklch(0.596 0.014 286); /* #7E7E87 */
+    --tds-grey-400: oklch(0.500 0.017 286); /* #62626D */
+    --tds-grey-300: oklch(0.425 0.020 286); /* #4D4D59 */
+    --tds-grey-200: oklch(0.361 0.019 285); /* #3C3C47 */
+    --tds-grey-100: oklch(0.297 0.016 285); /* #2C2C35 */
+    --tds-grey-50: oklch(0.247 0.013 285); /* #202027 */
+
+    --tds-bg-canvas: oklch(0.174 0.006 286);
+    --tds-bg-surface: oklch(0.247 0.013 285);
+    --tds-bg-secondary: oklch(0.297 0.016 285);
+    --tds-fg-primary: var(--tds-grey-900);
+    --tds-fg-secondary: var(--tds-grey-700);
+    --tds-fg-tertiary: var(--tds-grey-500);
+    --tds-border-hairline: var(--tds-grey-200);
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--tds-bg-canvas);
+  color: var(--tds-fg-primary);
+  font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    "SF Pro Text", "SF Pro", "Apple SD Gothic Neo", "Noto Sans KR", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.005em;
+}
+
+.tds-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.tds-proportional {
+  font-variant-numeric: proportional-nums;
 }
