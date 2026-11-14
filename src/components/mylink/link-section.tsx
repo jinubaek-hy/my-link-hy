@@ -1,14 +1,18 @@
 import * as React from "react";
+import { Plus } from "lucide-react";
 import { LinkButtonCard } from "@/components/mylink/link-button-card";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { LinkSectionItem } from "@/types/mylink";
 
 export interface LinkSectionProps extends React.ComponentProps<"section"> {
   section: LinkSectionItem;
+  onAddLink?: (sectionId: string) => void;
 }
 
 export function LinkSection({
   section,
+  onAddLink,
   className,
   ...props
 }: LinkSectionProps) {
@@ -26,13 +30,29 @@ export function LinkSection({
       className={cn("space-y-3", className)}
       {...props}
     >
-      <div className="flex items-center gap-2 px-1">
-        <span className="tds-title-2 tds-emoji" aria-hidden="true">
-          {section.emoji}
-        </span>
-        <h2 className="tds-title-2 text-foreground">
-          {section.title}
-        </h2>
+      <div className="flex items-center justify-between gap-2 px-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="tds-title-2 tds-emoji shrink-0" aria-hidden="true">
+            {section.emoji}
+          </span>
+          <h2 className="tds-title-2 text-foreground truncate">
+            {section.title}
+          </h2>
+        </div>
+
+        {onAddLink && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="xs"
+            onClick={() => onAddLink(section.id)}
+            aria-label={`${section.title} 섹션에 링크 추가`}
+            className="text-muted-foreground hover:text-primary shrink-0 -mr-1"
+          >
+            <Plus className="size-3.5" strokeWidth={2.2} />
+            <span>추가</span>
+          </Button>
+        )}
       </div>
 
       <div className="space-y-3">

@@ -138,6 +138,7 @@
 | :--- | :--- | :--- | :--- |
 | **LINK-01** | **섹션 헤더 (Section Header)** | [`LinkSection`](../src/components/mylink/link-section.tsx) | - 링크 그룹 상단에 이모지 + 섹션 타이틀(예: `🚀 주요 프로젝트 & 포트폴리오`, `📢 소셜 채널 & 커뮤니티`) 표시<br>- 섹션이 `enabled: true`이고 내부에 활성화된(`enabled: true`) 링크가 하나 이상 있을 때만 렌더링 |
 | **LINK-02** | **링크 버튼 카드 (Link Button Card)** | [`LinkButtonCard`](../src/components/mylink/link-button-card.tsx)<br>([`Card`](../src/components/ui/card.tsx)) | - `shadcn/ui` `Card`, `CardTitle`, `CardDescription`을 조합한 전체 폭(`w-full`) 터치 친화적 카드 버튼(`rounded-[20px]`, `bg-card` + `border-border`)<br>- 좌측 이모지/아이콘 배지 + **카드 제목(Bold)** + **한 줄 설명(Secondary Text)** + 우측 이동 화살표(`→`)로 구성<br>- 호버(`group-hover:border-primary/40`) 및 터치 프레스(`group-active:scale-[0.99]`) 시 부드러운 트랜지션 제공 |
+| **LINK-03** | **새 링크 추가 다이얼로그 (Add Link Dialog)** | [`AddLinkDialog`](../src/components/mylink/add-link-dialog.tsx)<br>([`Dialog`](../src/components/ui/dialog.tsx), [`Input`](../src/components/ui/input.tsx), [`Switch`](../src/components/ui/switch.tsx)) | - 상단 앱 바(`[+ 링크 추가]`), 각 섹션 헤더(`[+ 추가]`), 페이지 하단 CTA 버튼을 통해 호출되는 모달 다이얼로그(`rounded-2xl`, `shadow-tds-3`)<br>- 카테고리 섹션 선택, 아이콘 이모지 프리셋/직접 입력, 링크 제목, 한 줄 설명, 이동할 URL, 노출 여부(`Switch`) 입력 폼 및 `LinkButtonCard` 실시간 미리보기 제공<br>- 제출 시 `useMyLinkStore.addLink()`를 통해 로컬 상태(Zustand + LocalStorage)에 즉시 반영·노출 |
 
 ---
 
@@ -290,12 +291,17 @@ export interface MyLinkMockApiResponse {
 - [`src/components/ui/badge.tsx`](../src/components/ui/badge.tsx): 캡슐형 소셜 Pill 배지(`rounded-full`, `h-[34px]`) 및 `badgeVariants` 제공
 - [`src/components/ui/card.tsx`](../src/components/ui/card.tsx): `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter`, `CardAction` 프리미티브
 - [`src/components/ui/avatar.tsx`](../src/components/ui/avatar.tsx): `80×80px` 라운드 카드(`rounded-[24px]`) `Avatar`, `AvatarImage`, `AvatarFallback` 프리미티브
+- [`src/components/ui/dialog.tsx`](../src/components/ui/dialog.tsx): `@base-ui/react/dialog` 기반 TDS 모달 다이얼로그(`rounded-2xl`, `shadow-tds-3`, `bg-tds-overlay`) 프리미티브
+- [`src/components/ui/input.tsx`](../src/components/ui/input.tsx): `@base-ui/react/input` 기반 TDS 입력 필드(`rounded-m`, `h-12`) 프리미티브
+- [`src/components/ui/label.tsx`](../src/components/ui/label.tsx): 폼 필드 레이블(`tds-label-s`) 프리미티브
+- [`src/components/ui/switch.tsx`](../src/components/ui/switch.tsx): `@base-ui/react/switch` 기반 TDS 토글 스위치 프리미티브
 
 #### 2) 마이링크 도메인 재사용 컴포넌트 (`src/components/mylink/*`)
-- [`src/components/mylink/top-bar.tsx`](../src/components/mylink/top-bar.tsx) (`TopBar`): 상단 고정 헤더 타이틀 및 공유 `Button`을 캡슐화한 재사용 헤더 컴포넌트
+- [`src/components/mylink/top-bar.tsx`](../src/components/mylink/top-bar.tsx) (`TopBar`): 상단 고정 헤더 타이틀, 새 링크 추가 트리거, 공유 `Button`을 캡슐화한 재사용 헤더 컴포넌트
 - [`src/components/mylink/social-badge-list.tsx`](../src/components/mylink/social-badge-list.tsx) (`SocialBadgeLink`, `SocialBadgeList`): `badgeVariants`를 활용해 활성 소셜 배지들을 정렬·렌더링하는 컴포넌트
 - [`src/components/mylink/profile-hero-card.tsx`](../src/components/mylink/profile-hero-card.tsx) (`ProfileHeroCard`): `Card`, `Avatar`, `SocialBadgeList`를 조합해 중앙 프로필 영역을 렌더링하는 컴포넌트
 - [`src/components/mylink/link-button-card.tsx`](../src/components/mylink/link-button-card.tsx) (`LinkButtonCard`): `Card`, `CardTitle`, `CardDescription`을 조합해 개별 링크 카드를 렌더링하는 재사용 컴포넌트
-- [`src/components/mylink/link-section.tsx`](../src/components/mylink/link-section.tsx) (`LinkSection`): 섹션 헤더와 활성 `LinkButtonCard` 목록을 그룹 단위로 렌더링하는 컴포넌트
-- [`src/components/mylink/share-toast.tsx`](../src/components/mylink/share-toast.tsx) (`ShareToast`): 클립보드 복사 알림을 표시하는 재사용 토스트 컴포넌트
+- [`src/components/mylink/link-section.tsx`](../src/components/mylink/link-section.tsx) (`LinkSection`): 섹션 헤더(섹션별 빠른 링크 추가 버튼 포함)와 활성 `LinkButtonCard` 목록을 그룹 단위로 렌더링하는 컴포넌트
+- [`src/components/mylink/add-link-dialog.tsx`](../src/components/mylink/add-link-dialog.tsx) (`AddLinkDialog`): 새 링크 카드 추가 폼 및 실시간 `LinkButtonCard` 미리보기를 제공하는 다이얼로그 컴포넌트
+- [`src/components/mylink/share-toast.tsx`](../src/components/mylink/share-toast.tsx) (`ShareToast`): 클립보드 복사 및 링크 추가 알림을 표시하는 재사용 토스트 컴포넌트
 - [`src/components/mylink/index.ts`](../src/components/mylink/index.ts): 도메인 컴포넌트 배럴(Barrel) 익스포트 파일

@@ -21,6 +21,15 @@ export interface LinkCardItem {
   updatedAt?: string;
 }
 
+export interface AddLinkInput {
+  sectionId: string;
+  emoji: string;
+  title: string;
+  description: string;
+  href: string;
+  enabled?: boolean;
+}
+
 export interface LinkSectionItem {
   id: string;
   emoji: string;

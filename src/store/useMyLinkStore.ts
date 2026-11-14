@@ -4,6 +4,8 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { DEFAULT_MYLINK_DATA, LOCAL_STORAGE_KEY } from "@/lib/defaultData";
 import {
+  AddLinkInput,
+  LinkCardItem,
   LinkSectionItem,
   MyLinkData,
   MyLinkProfileData,
@@ -16,6 +18,7 @@ export interface MyLinkStore extends MyLinkData {
   updateProfile: (partial: Partial<MyLinkProfileData>) => void;
   setSocialBadges: (badges: SocialBadgeItem[]) => void;
   setLinkSections: (sections: LinkSectionItem[]) => void;
+  addLink: (input: AddLinkInput) => LinkCardItem;
   resetToDefault: () => void;
 }
 
@@ -35,6 +38,61 @@ export const useMyLinkStore = create<MyLinkStore>()(
       setSocialBadges: (socialBadges) => set({ socialBadges }),
 
       setLinkSections: (linkSections) => set({ linkSections }),
+
+      addLink: (input) => {
+        const now = new Date().toISOString();
+        let createdLink: LinkCardItem = {
+          id: `link-${Date.now()}`,
+          sectionId: input.sectionId,
+          emoji: input.emoji.trim() || "🔗",
+          title: input.title.trim(),
+          description: input.description.trim(),
+          href: input.href.trim(),
+          enabled: input.enabled ?? true,
+          clickCount: 0,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        set((state) => {
+          const fallbackSectionId =
+            state.linkSections[0]?.id ?? "section-projects";
+          const targetSectionId = state.linkSections.some(
+            (section) => section.id === input.sectionId
+          )
+            ? input.sectionId
+            : fallbackSectionId;
+
+          const nextSections = state.linkSections.map((section) => {
+            if (section.id !== targetSectionId) {
+              return section;
+            }
+
+            const maxOrder = section.links.reduce(
+              (max, item) => Math.max(max, item.order ?? 0),
+              0
+            );
+
+            createdLink = {
+              ...createdLink,
+              sectionId: targetSectionId,
+              order: maxOrder + 1,
+            };
+
+            return {
+              ...section,
+              enabled: createdLink.enabled ? true : section.enabled,
+              links: [...section.links, createdLink],
+            };
+          });
+
+          return {
+            linkSections: nextSections,
+          };
+        });
+
+        return createdLink;
+      },
 
       resetToDefault: () =>
         set({
