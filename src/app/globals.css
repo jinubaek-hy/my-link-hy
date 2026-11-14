@@ -1,26 +1,61 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 :root {
-  /* TDS Canonical Palette (OKLCH / Hex mapped) */
-  --tds-blue-500: oklch(0.620 0.191 258); /* #3182F6 */
-  --tds-blue-600: oklch(0.522 0.176 257);
-  --tds-blue-50: oklch(0.959 0.020 250); /* #E8F3FF */
+  /* =========================================================================
+   * 1. TDS Canonical Palette (design.md colors 1:1 매핑)
+   * ========================================================================= */
+  /* Brand */
+  --tds-blue-500: oklch(0.620 0.191 258); /* #3182F6 — primary / Toss Blue */
+  --tds-blue-600: oklch(0.522 0.176 257); /* pressed-blue 단계 */
+  --tds-blue-700: oklch(0.476 0.174 259); /* pressed gradient stop */
+  --tds-blue-50: oklch(0.959 0.020 250);  /* #E8F3FF — brand-weak background */
 
-  --tds-grey-900: oklch(0.237 0.020 258); /* #191F28 */
+  /* Greyscale */
+  --tds-grey-900: oklch(0.237 0.020 258); /* #191F28 — primary text */
   --tds-grey-800: oklch(0.357 0.028 257); /* #333D4B */
-  --tds-grey-700: oklch(0.460 0.028 256); /* #4E5968 */
+  --tds-grey-700: oklch(0.460 0.028 256); /* #4E5968 — secondary text */
   --tds-grey-600: oklch(0.562 0.025 254); /* #6B7684 */
   --tds-grey-500: oklch(0.666 0.021 253); /* #8B95A1 */
-  --tds-grey-400: oklch(0.779 0.016 251); /* #B0B8C1 */
+  --tds-grey-400: oklch(0.779 0.016 251); /* #B0B8C1 — disabled text, strong line */
   --tds-grey-300: oklch(0.874 0.009 248); /* #D1D6DB */
-  --tds-grey-200: oklch(0.930 0.005 248); /* #E5E8EB */
-  --tds-grey-100: oklch(0.966 0.003 248); /* #F2F4F6 */
-  --tds-grey-50: oklch(0.985 0.002 248); /* #F9FAFB */
-  --tds-white: oklch(1.000 0.000 0);
+  --tds-grey-200: oklch(0.930 0.005 248); /* #E5E8EB — default divider/border */
+  --tds-grey-150: oklch(0.918 0.007 247);
+  --tds-grey-100: oklch(0.966 0.003 248); /* #F2F4F6 — greyBackground / secondary surface */
+  --tds-grey-50: oklch(0.985 0.002 248);  /* #F9FAFB */
+  --tds-white: oklch(1.000 0.000 0);      /* #FFFFFF */
 
+  /* Toss Yellow & Orange */
   --tds-yellow-500: oklch(0.850 0.154 82); /* #FFC342 */
-  --tds-green-500: oklch(0.493 0.143 154);
-  --tds-red-500: oklch(0.641 0.208 21); /* #F04452 */
+  --tds-yellow-400: oklch(0.893 0.123 85);
+  --tds-yellow-300: oklch(0.906 0.126 91); /* #FFDD78 */
+  --tds-yellow-600: oklch(0.840 0.171 87);
+  --tds-yellow-700: oklch(0.872 0.169 87);
+  --tds-orange-500: oklch(0.748 0.183 56);
+  --tds-orange-400: oklch(0.828 0.108 52);
+  --tds-orange-300: oklch(0.870 0.078 51);
+
+  /* Semantic Palette */
+  --tds-red-500: oklch(0.641 0.208 21);   /* #F04452 — error / danger */
+  --tds-red-600: oklch(0.626 0.216 22);
+  --tds-green-500: oklch(0.493 0.143 154); /* success */
+  --tds-navy-900: oklch(0.155 0.060 261);  /* shadow base */
+
+  /* Illustration Warms */
+  --tds-brown-900: oklch(0.359 0.083 39);
+  --tds-brown-700: oklch(0.444 0.062 30);
+  --tds-brown-500: oklch(0.535 0.073 39);
+  --tds-brown-400: oklch(0.659 0.097 41);
+
+  /* Semantic Alpha Tokens (design.md lines 50-55) */
+  --tds-fg-tertiary: oklch(0.155 0.060 261 / 0.58);
+  --tds-fg-quaternary: oklch(0.155 0.060 261 / 0.28);
+  --tds-line-subtle: oklch(0.000 0.000 0 / 0.08);
+  --tds-bg-overlay: oklch(0.000 0.000 0 / 0.56);
+  --tds-press-overlay: oklch(0.000 0.000 0 / 0.26);
 
   /* Adaptive Roles */
   --tds-bg-canvas: var(--tds-grey-100);
@@ -28,49 +63,353 @@
   --tds-bg-secondary: var(--tds-grey-100);
   --tds-fg-primary: var(--tds-grey-900);
   --tds-fg-secondary: var(--tds-grey-700);
-  --tds-fg-tertiary: oklch(0.155 0.060 261 / 0.58);
   --tds-border-hairline: var(--tds-grey-200);
-  --tds-press-overlay: oklch(0.000 0.000 0 / 0.26);
 
-  /* Motion tokens */
+  /* Motion, Elevation & Opacity (design.md lines 192-201) */
   --tds-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
   --tds-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --tds-shadow-1: 0 1px 2px oklch(0.155 0.060 261 / 0.04), 0 1px 1px oklch(0.155 0.060 261 / 0.04);
+  --tds-shadow-2: 0 4px 12px oklch(0.155 0.060 261 / 0.06), 0 1px 2px oklch(0.155 0.060 261 / 0.04);
+  --tds-shadow-3: 0 12px 32px oklch(0.155 0.060 261 / 0.10), 0 2px 6px oklch(0.155 0.060 261 / 0.06);
+  --tds-shadow-toast: 0 8px 24px oklch(0.155 0.060 261 / 0.16);
+  --tds-disabled-opacity: 0.30;
+
+  /* Fonts (design.md lines 74, 201) */
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    "SF Pro Text", "SF Pro", "Apple SD Gothic Neo", "Noto Sans KR", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-emoji: "Tossface", "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+
+  /* =========================================================================
+   * 2. shadcn/ui Semantic Variables <-> design.md TDS Tokens
+   * ========================================================================= */
+  --background: var(--tds-grey-100);
+  --foreground: var(--tds-grey-900);
+  --card: var(--tds-white);
+  --card-foreground: var(--tds-grey-900);
+  --popover: var(--tds-white);
+  --popover-foreground: var(--tds-grey-900);
+  --primary: var(--tds-blue-500);
+  --primary-foreground: var(--tds-white);
+  --secondary: var(--tds-grey-100);
+  --secondary-foreground: var(--tds-grey-800);
+  --muted: var(--tds-grey-50);
+  --muted-foreground: var(--tds-grey-700);
+  --accent: var(--tds-blue-50);
+  --accent-foreground: var(--tds-blue-500);
+  --destructive: var(--tds-red-500);
+  --border: var(--tds-grey-200);
+  --input: var(--tds-grey-200);
+  --ring: var(--tds-blue-500);
+
+  --radius: 14px; /* design.md radius-l (14px) */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --tds-blue-500: oklch(0.630 0.192 258); /* #3485FA */
-    --tds-blue-50: oklch(0.300 0.062 267); /* #202C4D */
+    /* Dark palette (design.md lines 56-71) */
+    --tds-blue-500: oklch(0.630 0.192 258); /* #3485FA — dark-blue-500 */
+    --tds-blue-50: oklch(0.300 0.062 267);  /* #202C4D — dark-blue-50 */
 
-    --tds-grey-900: oklch(1.000 0.000 0); /* #FFFFFF */
-    --tds-grey-800: oklch(0.919 0.001 286); /* #E4E4E5 */
-    --tds-grey-700: oklch(0.818 0.004 286); /* #C3C3C6 */
-    --tds-grey-600: oklch(0.701 0.009 286); /* #9E9EA4 */
-    --tds-grey-500: oklch(0.596 0.014 286); /* #7E7E87 */
-    --tds-grey-400: oklch(0.500 0.017 286); /* #62626D */
-    --tds-grey-300: oklch(0.425 0.020 286); /* #4D4D59 */
-    --tds-grey-200: oklch(0.361 0.019 285); /* #3C3C47 */
-    --tds-grey-100: oklch(0.297 0.016 285); /* #2C2C35 */
-    --tds-grey-50: oklch(0.247 0.013 285); /* #202027 */
+    --tds-grey-900: oklch(1.000 0.000 0);   /* #FFFFFF — dark-grey-900 */
+    --tds-grey-800: oklch(0.919 0.001 286); /* #E4E4E5 — dark-grey-800 */
+    --tds-grey-700: oklch(0.818 0.004 286); /* #C3C3C6 — dark-grey-700 */
+    --tds-grey-600: oklch(0.701 0.009 286); /* #9E9EA4 — dark-grey-600 */
+    --tds-grey-500: oklch(0.596 0.014 286); /* #7E7E87 — dark-grey-500 */
+    --tds-grey-400: oklch(0.500 0.017 286); /* #62626D — dark-grey-400 */
+    --tds-grey-300: oklch(0.425 0.020 286); /* #4D4D59 — dark-grey-300 */
+    --tds-grey-200: oklch(0.361 0.019 285); /* #3C3C47 — dark-grey-200 */
+    --tds-grey-100: oklch(0.297 0.016 285); /* #2C2C35 — dark-grey-100 */
+    --tds-grey-50: oklch(0.247 0.013 285);  /* #202027 — dark-grey-50 */
+    --tds-yellow-500: oklch(0.816 0.158 74); /* #FFB134 — dark-yellow-500 */
+    --tds-yellow-300: oklch(0.724 0.159 62); /* #EB8B1E — dark-yellow-300 */
+    --tds-red-500: oklch(0.639 0.209 21);   /* #F04251 — dark-red-500 */
 
     --tds-bg-canvas: oklch(0.174 0.006 286);
-    --tds-bg-surface: oklch(0.247 0.013 285);
-    --tds-bg-secondary: oklch(0.297 0.016 285);
+    --tds-bg-surface: var(--tds-grey-50);
+    --tds-bg-secondary: var(--tds-grey-100);
     --tds-fg-primary: var(--tds-grey-900);
     --tds-fg-secondary: var(--tds-grey-700);
     --tds-fg-tertiary: var(--tds-grey-500);
+    --tds-fg-quaternary: var(--tds-grey-400);
     --tds-border-hairline: var(--tds-grey-200);
+
+    --background: oklch(0.174 0.006 286);
+    --foreground: var(--tds-grey-900);
+    --card: var(--tds-grey-50);
+    --card-foreground: var(--tds-grey-900);
+    --popover: var(--tds-grey-50);
+    --popover-foreground: var(--tds-grey-900);
+    --primary: var(--tds-blue-500);
+    --primary-foreground: oklch(1.000 0.000 0);
+    --secondary: var(--tds-grey-100);
+    --secondary-foreground: var(--tds-grey-800);
+    --muted: var(--tds-grey-100);
+    --muted-foreground: var(--tds-grey-700);
+    --accent: var(--tds-blue-50);
+    --accent-foreground: var(--tds-blue-500);
+    --destructive: var(--tds-red-500);
+    --border: var(--tds-grey-200);
+    --input: var(--tds-grey-200);
+    --ring: var(--tds-blue-500);
   }
 }
 
-body {
-  background-color: var(--tds-bg-canvas);
-  color: var(--tds-fg-primary);
-  font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
-    "SF Pro Text", "SF Pro", "Apple SD Gothic Neo", "Noto Sans KR", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
+.dark {
+  --tds-blue-500: oklch(0.630 0.192 258);
+  --tds-blue-50: oklch(0.300 0.062 267);
+  --tds-grey-900: oklch(1.000 0.000 0);
+  --tds-grey-800: oklch(0.919 0.001 286);
+  --tds-grey-700: oklch(0.818 0.004 286);
+  --tds-grey-600: oklch(0.701 0.009 286);
+  --tds-grey-500: oklch(0.596 0.014 286);
+  --tds-grey-400: oklch(0.500 0.017 286);
+  --tds-grey-300: oklch(0.425 0.020 286);
+  --tds-grey-200: oklch(0.361 0.019 285);
+  --tds-grey-100: oklch(0.297 0.016 285);
+  --tds-grey-50: oklch(0.247 0.013 285);
+  --tds-yellow-500: oklch(0.816 0.158 74);
+  --tds-yellow-300: oklch(0.724 0.159 62);
+  --tds-red-500: oklch(0.639 0.209 21);
+
+  --tds-bg-canvas: oklch(0.174 0.006 286);
+  --tds-bg-surface: var(--tds-grey-50);
+  --tds-bg-secondary: var(--tds-grey-100);
+  --tds-fg-primary: var(--tds-grey-900);
+  --tds-fg-secondary: var(--tds-grey-700);
+  --tds-fg-tertiary: var(--tds-grey-500);
+  --tds-fg-quaternary: var(--tds-grey-400);
+  --tds-border-hairline: var(--tds-grey-200);
+
+  --background: oklch(0.174 0.006 286);
+  --foreground: var(--tds-grey-900);
+  --card: var(--tds-grey-50);
+  --card-foreground: var(--tds-grey-900);
+  --popover: var(--tds-grey-50);
+  --popover-foreground: var(--tds-grey-900);
+  --primary: var(--tds-blue-500);
+  --primary-foreground: oklch(1.000 0.000 0);
+  --secondary: var(--tds-grey-100);
+  --secondary-foreground: var(--tds-grey-800);
+  --muted: var(--tds-grey-100);
+  --muted-foreground: var(--tds-grey-700);
+  --accent: var(--tds-blue-50);
+  --accent-foreground: var(--tds-blue-500);
+  --destructive: var(--tds-red-500);
+  --border: var(--tds-grey-200);
+  --input: var(--tds-grey-200);
+  --ring: var(--tds-blue-500);
+}
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: var(--font-sans);
+  --font-emoji: var(--font-emoji);
+
+  /* shadcn/ui Semantic Color Utilities */
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+
+  /* design.md Full TDS Palette Utilities */
+  --color-tds-blue-500: var(--tds-blue-500);
+  --color-tds-blue-600: var(--tds-blue-600);
+  --color-tds-blue-700: var(--tds-blue-700);
+  --color-tds-blue-50: var(--tds-blue-50);
+  --color-tds-grey-900: var(--tds-grey-900);
+  --color-tds-grey-800: var(--tds-grey-800);
+  --color-tds-grey-700: var(--tds-grey-700);
+  --color-tds-grey-600: var(--tds-grey-600);
+  --color-tds-grey-500: var(--tds-grey-500);
+  --color-tds-grey-400: var(--tds-grey-400);
+  --color-tds-grey-300: var(--tds-grey-300);
+  --color-tds-grey-200: var(--tds-grey-200);
+  --color-tds-grey-150: var(--tds-grey-150);
+  --color-tds-grey-100: var(--tds-grey-100);
+  --color-tds-grey-50: var(--tds-grey-50);
+  --color-tds-yellow-500: var(--tds-yellow-500);
+  --color-tds-yellow-300: var(--tds-yellow-300);
+  --color-tds-orange-500: var(--tds-orange-500);
+  --color-tds-red-500: var(--tds-red-500);
+  --color-tds-green-500: var(--tds-green-500);
+  --color-tds-tertiary: var(--tds-fg-tertiary);
+  --color-tds-quaternary: var(--tds-fg-quaternary);
+  --color-tds-line-subtle: var(--tds-line-subtle);
+  --color-tds-overlay: var(--tds-bg-overlay);
+  --color-tds-press: var(--tds-press-overlay);
+
+  /* design.md Rounded Scale (lines 182-191) */
+  --radius-xs: 4px;    /* small badges */
+  --radius-s: 8px;     /* inline tags */
+  --radius-sm: 8px;
+  --radius-m: 12px;    /* text inputs */
+  --radius-md: 12px;
+  --radius-l: 14px;    /* L button (48px) */
+  --radius-lg: 14px;
+  --radius-xl: 16px;   /* XL button (56px), cards */
+  --radius-2xl: 20px;  /* sheets, dialogs, link cards */
+  --radius-3xl: 24px;  /* big cards / sections / avatar */
+  --radius-4xl: 32px;  /* hero blocks */
+  --radius-full: 999px; /* chips, pills, capsules */
+
+  /* design.md Elevation Scale (lines 192-196) */
+  --shadow-tds-1: var(--tds-shadow-1);
+  --shadow-tds-2: var(--tds-shadow-2);
+  --shadow-tds-3: var(--tds-shadow-3);
+  --shadow-tds-toast: var(--tds-shadow-toast);
+
+  /* design.md Motion Easing */
+  --ease-tds: var(--tds-ease);
+  --ease-tds-out: var(--tds-ease-out);
+}
+
+/* =========================================================================
+ * 3. design.md Typography Scale Utilities (lines 72-168)
+ * ========================================================================= */
+@utility tds-display-1 {
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1.3;
   letter-spacing: -0.005em;
+}
+
+@utility tds-display-2 {
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+@utility tds-h1 {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+@utility tds-h2 {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+@utility tds-h3 {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+}
+
+@utility tds-h4 {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.015em;
+}
+
+@utility tds-title-1 {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+}
+
+@utility tds-title-2 {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+}
+
+@utility tds-body-1 {
+  font-size: 17px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+}
+
+@utility tds-body-2 {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+}
+
+@utility tds-body-3 {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0em;
+}
+
+@utility tds-label-l {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+}
+
+@utility tds-label-m {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+}
+
+@utility tds-label-s {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0em;
+}
+
+@utility tds-caption {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0em;
+}
+
+@utility tds-caption-s {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0em;
+}
+
+@utility tds-emoji {
+  font-family: var(--font-emoji);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    font-family: var(--font-sans);
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.005em;
+  }
 }
 
 .tds-tabular {
