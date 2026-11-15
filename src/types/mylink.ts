@@ -68,6 +68,19 @@ export interface MyLinkProfileData {
   updatedAt?: string;
 }
 
+export interface UpdateProfileInput {
+  name: string;
+  bio: string;
+  avatarUrl?: string;
+  headerTitle?: string;
+}
+
+export interface DisplayNameCheckResult {
+  available: boolean;
+  isCurrentUserName?: boolean;
+  message: string;
+}
+
 export interface MyLinkData {
   version: 3;
   profile: MyLinkProfileData;

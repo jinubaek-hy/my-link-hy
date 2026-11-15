@@ -1,8 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowUpRight, Check, Loader2, LogOut, Plus } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ArrowUpRight, Check, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MyLinkAuthUser } from "@/types/mylink";
@@ -61,8 +60,10 @@ export function TopBar({
 }: TopBarProps) {
   const userDisplayName =
     user?.displayName?.trim() ||
-    (user?.email ? user.email.split("@")[0] : "사용자");
-  const userInitial = userDisplayName.charAt(0).toUpperCase() || "U";
+    (user?.email && user.email.includes("@")
+      ? user.email.split("@")[0]?.trim()
+      : "") ||
+    "사용자";
 
   return (
     <header
@@ -93,52 +94,21 @@ export function TopBar({
           )}
 
           {isAuthLoading ? (
-            <div
-              role="status"
-              aria-label="로그인 상태 확인 중"
-              className="inline-flex items-center gap-1.5 h-[34px] px-3 rounded-full bg-secondary text-muted-foreground tds-caption"
-            >
-              <Loader2 className="size-3.5 animate-spin text-primary" />
-              <span>확인 중</span>
-            </div>
+            <Loader2 className="size-4 animate-spin text-muted-foreground mx-2" />
           ) : user ? (
-            <div className="flex items-center gap-1.5">
-              <div
-                className="flex items-center gap-1.5 h-[34px] pl-1.5 pr-2.5 rounded-full bg-secondary/80 border border-border"
-                title={
-                  user.email
-                    ? `${userDisplayName} (${user.email})`
-                    : userDisplayName
-                }
-              >
-                <Avatar className="size-6 rounded-full border-0">
-                  {user.photoURL && (
-                    <AvatarImage
-                      src={user.photoURL}
-                      alt={`${userDisplayName} 프로필`}
-                      referrerPolicy="no-referrer"
-                    />
-                  )}
-                  <AvatarFallback className="rounded-full tds-caption bg-accent text-accent-foreground">
-                    {userInitial}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="tds-caption text-foreground font-semibold max-w-[84px] sm:max-w-[120px] truncate">
-                  {userDisplayName}
-                </span>
-              </div>
-
+            <div className="flex items-center gap-2">
+              <span className="tds-caption text-muted-foreground max-w-[100px] truncate hidden sm:inline">
+                {userDisplayName}
+              </span>
               {onLogout && (
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="secondary"
                   size="sm"
                   onClick={onLogout}
                   aria-label="로그아웃"
-                  className="h-[34px] rounded-full px-3 tds-caption"
                 >
-                  <LogOut className="size-3.5" strokeWidth={2.2} />
-                  <span>로그아웃</span>
+                  로그아웃
                 </Button>
               )}
             </div>
@@ -146,21 +116,18 @@ export function TopBar({
             onGoogleLogin && (
               <Button
                 type="button"
-                variant="default"
-                size="pill"
+                variant="secondary"
+                size="sm"
                 onClick={onGoogleLogin}
                 disabled={isSigningIn}
-                aria-label="구글 소셜 로그인"
-                className="pl-3 pr-3.5 shadow-tds-1"
+                aria-label="구글 로그인"
               >
                 {isSigningIn ? (
-                  <Loader2 className="size-3.5 animate-spin" strokeWidth={2.4} />
+                  <Loader2 className="size-3.5 animate-spin" strokeWidth={2.2} />
                 ) : (
-                  <span className="size-5 rounded-full bg-white flex items-center justify-center shrink-0">
-                    <GoogleLogoIcon className="size-3.5" />
-                  </span>
+                  <GoogleLogoIcon className="size-3.5" />
                 )}
-                <span>{isSigningIn ? "로그인 중..." : "구글 로그인"}</span>
+                <span>구글 로그인</span>
               </Button>
             )
           )}

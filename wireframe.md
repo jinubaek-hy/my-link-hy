@@ -30,7 +30,7 @@ flowchart TD
     Page --> Main["main (max-w-[560px] mx-auto px-5 pt-5 space-y-6)"]
     Page --> AddDialog["6. AddLinkDialog\n(users/{user.uid}/links 새 링크 추가 모달)"]
     Page --> DeleteDialog["7. DeleteLinkDialog\n(users/{user.uid}/links 링크 삭제 확인 모달)"]
-    Page --> Toast["8. ShareToast\n(하단 고정 캡슐 토스트 알림)"]
+    Page --> Toast["8. Sonner Toaster (position='top-center')\n(중앙 상단 고가독성 제목 + 설명 토스트 알림)"]
 
     Main --> AuthBranch{"로그인 상태 분기\n(onAuthStateChanged)"}
     AuthBranch -->|"isAuthLoading = true"| AuthLoading["2-A. 인증 상태 확인 로딩 카드"]
@@ -91,12 +91,12 @@ flowchart TD
 
 ### 3.2 로그인 완료 상태 — 마이페이지 화면 (`currentUser !== null`, `users/{user.uid}/links` 개인화)
 
-구글 로그인 완료 시 **마이페이지(My Page)** 화면으로 전환되며, 헤더 좌측에 `마이페이지`, 우측에 **로그인 유저의 아바타·이름 배지와 `[로그아웃]` 버튼**이 표시됩니다. 본문에는 **해당 유저의 프로필 정보(이름, 이메일, 아바타, `users/{user.uid}/links` 경로)**와 **개인화된 링크 목록**이 렌더링됩니다.
+구글 로그인 완료 시 **마이페이지(My Page)** 화면으로 전환되며, 헤더 좌측에 `마이페이지`, 우측에 **로그인 유저의 아바타·이름 배지(`email.split("@")[0]` 이메일 앞부분 사용)와 `[로그아웃]` 버튼**이 표시됩니다. 본문에는 **해당 유저의 프로필 정보(이메일 앞부분 Display Name, 이메일, 아바타, `users/{user.uid}/links` 경로)**와 **개인화된 링크 목록**이 렌더링됩니다.
 
 ```text
 +===================================================================================+
 | [1. TopBar] sticky top-0 z-20 h-[56px] border-b                                   |
-|  마이페이지                                 [ (📷) 홍길동 ]  [ ↪ 로그아웃 ] [ ↗ ] |
+|  마이페이지                                [ (📷) gildong ]  [ ↪ 로그아웃 ] [ ↗ ] |
 +===================================================================================+
 |                                                                                   |
 |  +-- [3. AddLinkButton] (bg-primary #3182F6, rounded-2xl, shadow-tds-2) --------+ |
@@ -112,7 +112,7 @@ flowchart TD
 |  |                               +--------------+                               | |
 |  |                      [ ✓ 마이페이지 · Google 계정 연동됨 ]                   | |
 |  |                                                                              | |
-|  |                               홍길동 (displayName)            (tds-h3)       | |
+|  |                        gildong (이메일 앞부분 displayName)    (tds-h3)       | |
 |  |                          ✉️ gildong@gmail.com (email)         (tds-caption)  | |
 |  |                 "gildong@gmail.com · 나만의 마이페이지 프로필 🚀"            | |
 |  |                                                                              | |

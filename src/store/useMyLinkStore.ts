@@ -2,8 +2,9 @@
 
 import {
   GoogleAuthProvider,
-   signInWithPopup,
+  signInWithPopup,
   signOut,
+  updateProfile as updateFirebaseAuthProfile,
 } from "firebase/auth";
 import {
   addDoc,
@@ -12,8 +13,10 @@ import {
   doc,
   getDoc,
   getDocs,
+  query,
   setDoc,
   updateDoc,
+  where,
 } from "firebase/firestore";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
@@ -25,6 +28,7 @@ import {
 import { auth, db } from "@/lib/firebase";
 import {
   AddLinkInput,
+  DisplayNameCheckResult,
   LinkCardItem,
   LinkSectionItem,
   MyLinkAuthUser,
@@ -32,6 +36,7 @@ import {
   MyLinkProfileData,
   SocialBadgeItem,
   UpdateLinkInput,
+  UpdateProfileInput,
 } from "@/types/mylink";
 
 /** 기본(비로그인 폴백) Firestore 경로 상수 */
@@ -44,6 +49,18 @@ export const FIRESTORE_LINKS_COLLECTION_PATH = [
 /** 로그인한 사용자 개인화 Firestore 링크 컬렉션 경로: users/{user.uid}/links */
 export function getUserLinksCollectionPath(uid: string) {
   return ["users", uid, "links"] as const;
+}
+
+/** 이메일의 앞부분(@ 이전 아이디)을 Display Name으로 추출하는 헬퍼 함수 */
+export function getEmailPrefixDisplayName(
+  email?: string | null,
+  fallbackName?: string | null
+): string {
+  if (email && email.includes("@")) {
+    const prefix = email.split("@")[0]?.trim();
+    if (prefix) return prefix;
+  }
+  return fallbackName?.trim() || "마이링크 사용자";
 }
 
 function createEmptySectionsTemplate(): LinkSectionItem[] {
@@ -95,6 +112,8 @@ export interface MyLinkStore extends MyLinkData {
   isAddingLink: boolean;
   isUpdatingLink: boolean;
   isDeletingLink: boolean;
+  isUpdatingProfile: boolean;
+  isCheckingDisplayName: boolean;
   setHasHydrated: (hydrated: boolean) => void;
   setCurrentUser: (user: MyLinkAuthUser | null) => void;
   setAuthLoading: (loading: boolean) => void;
@@ -103,6 +122,10 @@ export interface MyLinkStore extends MyLinkData {
   signOutUser: () => Promise<void>;
   syncUserProfileAndLinks: (user: MyLinkAuthUser) => Promise<void>;
   updateProfile: (partial: Partial<MyLinkProfileData>) => void;
+  checkDisplayNameAvailability: (
+    displayName: string
+  ) => Promise<DisplayNameCheckResult>;
+  saveUserProfile: (input: UpdateProfileInput) => Promise<MyLinkProfileData>;
   setSocialBadges: (badges: SocialBadgeItem[]) => void;
   setLinkSections: (sections: LinkSectionItem[]) => void;
   addLink: (input: AddLinkInput) => Promise<LinkCardItem>;
@@ -126,6 +149,8 @@ export const useMyLinkStore = create<MyLinkStore>()(
       isAddingLink: false,
       isUpdatingLink: false,
       isDeletingLink: false,
+      isUpdatingProfile: false,
+      isCheckingDisplayName: false,
 
       setHasHydrated: (hydrated) => set({ hasHydrated: hydrated }),
 
@@ -145,13 +170,16 @@ export const useMyLinkStore = create<MyLinkStore>()(
 
           const authUser: MyLinkAuthUser = {
             uid: fbUser.uid,
-            displayName: fbUser.displayName,
+            displayName: getEmailPrefixDisplayName(
+              fbUser.email,
+              fbUser.displayName
+            ),
             email: fbUser.email,
             photoURL: fbUser.photoURL,
           };
 
           await get().syncUserProfileAndLinks(authUser);
-          return authUser;
+          return get().currentUser ?? authUser;
         } catch (error: unknown) {
           const code =
             error && typeof error === "object" && "code" in error
@@ -188,17 +216,19 @@ export const useMyLinkStore = create<MyLinkStore>()(
       syncUserProfileAndLinks: async (authUser) => {
         const defaultName =
           authUser.displayName?.trim() ||
-          (authUser.email ? authUser.email.split("@")[0] : "마이링크 사용자");
+          getEmailPrefixDisplayName(authUser.email, authUser.displayName);
+        let normalizedUser: MyLinkAuthUser = {
+          ...authUser,
+          displayName: defaultName,
+        };
         const defaultAvatar = authUser.photoURL || "";
-        const defaultBio = authUser.email
-          ? `${authUser.email} · 나만의 마이페이지 프로필 🚀`
-          : "구글 계정으로 연동된 나만의 마이페이지 프로필 🚀";
+        const defaultBio = DEFAULT_MYLINK_DATA.profile.bio;
 
         let mergedProfile: MyLinkProfileData = {
           id: authUser.uid,
           uid: authUser.uid,
           email: authUser.email ?? undefined,
-          handle: authUser.email ? `@${authUser.email.split("@")[0]}` : undefined,
+          handle: `@${defaultName}`,
           headerTitle: "마이페이지",
           avatarUrl: defaultAvatar,
           name: defaultName,
@@ -206,29 +236,29 @@ export const useMyLinkStore = create<MyLinkStore>()(
           updatedAt: new Date().toISOString(),
         };
 
-        // users/{user.uid} 문서가 존재하는 경우 유저 프로필 정보를 읽어와 병합하고 최신 정보 저장
+        // users/{user.uid} 문서가 존재하는 경우 유저 프로필 정보(커스텀 displayName 포함)를 읽어와 병합
         try {
           const userDocRef = doc(db, "users", authUser.uid);
           const userSnap = await getDoc(userDocRef);
 
           if (userSnap.exists()) {
             const data = userSnap.data();
-            const docName =
-              typeof data.name === "string" && data.name.trim()
-                ? data.name.trim()
-                : typeof data.displayName === "string" && data.displayName.trim()
-                  ? data.displayName.trim()
-                  : defaultName;
+            const docEmail =
+              typeof data.email === "string" && data.email.trim()
+                ? data.email.trim()
+                : authUser.email ?? undefined;
+            const customDocName =
+              typeof data.displayName === "string" && data.displayName.trim()
+                ? data.displayName.trim()
+                : typeof data.name === "string" && data.name.trim()
+                  ? data.name.trim()
+                  : getEmailPrefixDisplayName(docEmail, defaultName);
             const docAvatar =
               typeof data.avatarUrl === "string" && data.avatarUrl.trim()
                 ? data.avatarUrl.trim()
                 : typeof data.photoURL === "string" && data.photoURL.trim()
                   ? data.photoURL.trim()
                   : defaultAvatar;
-            const docEmail =
-              typeof data.email === "string" && data.email.trim()
-                ? data.email.trim()
-                : authUser.email ?? undefined;
             const docBio =
               typeof data.bio === "string" && data.bio.trim()
                 ? data.bio.trim()
@@ -236,7 +266,8 @@ export const useMyLinkStore = create<MyLinkStore>()(
 
             mergedProfile = {
               ...mergedProfile,
-              name: docName,
+              name: customDocName,
+              handle: `@${customDocName}`,
               avatarUrl: docAvatar,
               email: docEmail,
               bio: docBio,
@@ -245,13 +276,32 @@ export const useMyLinkStore = create<MyLinkStore>()(
                   ? data.headerTitle.trim()
                   : "마이페이지",
             };
+
+            normalizedUser = {
+              ...normalizedUser,
+              displayName: customDocName,
+              photoURL: docAvatar || authUser.photoURL,
+            };
+
+            // 기존 문서에 displayNameLower 필드가 없는 경우 검색 인덱싱을 위해 병합 저장
+            if (data.displayNameLower !== customDocName.toLowerCase()) {
+              void setDoc(
+                userDocRef,
+                {
+                  displayName: customDocName,
+                  displayNameLower: customDocName.toLowerCase(),
+                },
+                { merge: true }
+              ).catch(() => {});
+            }
           } else {
             await setDoc(
               userDocRef,
               {
                 uid: authUser.uid,
                 name: mergedProfile.name,
-                displayName: authUser.displayName ?? mergedProfile.name,
+                displayName: mergedProfile.name,
+                displayNameLower: mergedProfile.name.toLowerCase(),
                 email: authUser.email ?? null,
                 photoURL: authUser.photoURL ?? null,
                 avatarUrl: mergedProfile.avatarUrl,
@@ -278,7 +328,7 @@ export const useMyLinkStore = create<MyLinkStore>()(
         });
 
         set({
-          currentUser: authUser,
+          currentUser: normalizedUser,
           profile: mergedProfile,
           socialBadges: nextBadges,
           isAuthLoading: false,
@@ -291,6 +341,230 @@ export const useMyLinkStore = create<MyLinkStore>()(
         set((state) => ({
           profile: { ...state.profile, ...partial },
         })),
+
+      checkDisplayNameAvailability: async (rawDisplayName) => {
+        const trimmed = rawDisplayName.trim();
+        if (trimmed.length < 2) {
+          return {
+            available: false,
+            message: "Display Name은 최소 2자 이상 입력해주세요.",
+          };
+        }
+        if (trimmed.length > 20) {
+          return {
+            available: false,
+            message: "Display Name은 최대 20자 이내로 입력해주세요.",
+          };
+        }
+
+        const state = get();
+        const currentUid = state.currentUser?.uid;
+        const currentName = (
+          state.profile.name ||
+          state.currentUser?.displayName ||
+          ""
+        ).trim();
+
+        const normalized = trimmed.toLowerCase();
+        if (currentName && normalized === currentName.toLowerCase()) {
+          return {
+            available: true,
+            isCurrentUserName: true,
+            message: "현재 사용 중인 Display Name이에요.",
+          };
+        }
+
+        set({ isCheckingDisplayName: true });
+        try {
+          const usersColRef = collection(db, "users");
+          const [lowerSnap, exactDisplaySnap, exactNameSnap] =
+            await Promise.all([
+              getDocs(
+                query(usersColRef, where("displayNameLower", "==", normalized))
+              ),
+              getDocs(query(usersColRef, where("displayName", "==", trimmed))),
+              getDocs(query(usersColRef, where("name", "==", trimmed))),
+            ]);
+
+          const matchedDocs = [
+            ...lowerSnap.docs,
+            ...exactDisplaySnap.docs,
+            ...exactNameSnap.docs,
+          ];
+
+          const isTakenByOther = matchedDocs.some((docSnap) => {
+            const docUid =
+              typeof docSnap.data().uid === "string"
+                ? docSnap.data().uid
+                : docSnap.id;
+            return currentUid ? docUid !== currentUid && docSnap.id !== currentUid : true;
+          });
+
+          if (isTakenByOther) {
+            return {
+              available: false,
+              message:
+                "이미 사용 중인 Display Name이에요. 다른 이름을 입력해주세요.",
+            };
+          }
+
+          return {
+            available: true,
+            message: "사용 가능한 Display Name이에요.",
+          };
+        } catch (error) {
+          console.warn(
+            "Firestore users collection duplicate check fallback:",
+            error
+          );
+          // 상위 users 컬렉션 목록 조회 권한이 제한된 환경일 경우 displayNames 인덱스 문서 조회 시도
+          try {
+            const indexDocRef = doc(
+              db,
+              "displayNames",
+              encodeURIComponent(normalized)
+            );
+            const indexSnap = await getDoc(indexDocRef);
+            if (indexSnap.exists()) {
+              const ownerUid = indexSnap.data()?.uid;
+              if (!currentUid || ownerUid !== currentUid) {
+                return {
+                  available: false,
+                  message:
+                    "이미 사용 중인 Display Name이에요. 다른 이름을 입력해주세요.",
+                };
+              }
+            }
+          } catch {
+            // 보안 규칙에 의해 타 유저 문서 조회가 차단된 경우 형식 검증 통과 처리
+          }
+
+          return {
+            available: true,
+            message: "사용 가능한 Display Name이에요.",
+          };
+        } finally {
+          set({ isCheckingDisplayName: false });
+        }
+      },
+
+      saveUserProfile: async (input) => {
+        const state = get();
+        const currentUser = state.currentUser;
+        if (!currentUser?.uid) {
+          throw new Error("로그인 후 프로필을 수정할 수 있습니다.");
+        }
+
+        const trimmedName = input.name.trim();
+        const trimmedBio =
+          input.bio.trim() || "안녕하세요! 나만의 링크를 모아둔 공간입니다.";
+        const trimmedAvatar =
+          input.avatarUrl !== undefined
+            ? input.avatarUrl.trim()
+            : state.profile.avatarUrl;
+        const trimmedHeaderTitle =
+          input.headerTitle?.trim() ||
+          state.profile.headerTitle ||
+          "마이페이지";
+
+        set({ isUpdatingProfile: true });
+        try {
+          const check = await get().checkDisplayNameAvailability(trimmedName);
+          if (!check.available) {
+            throw new Error(check.message);
+          }
+
+          const now = new Date().toISOString();
+          const uid = currentUser.uid;
+          const previousName = (
+            state.profile.name ||
+            currentUser.displayName ||
+            ""
+          ).trim();
+
+          // 1. Firebase Auth 프로필 업데이트 (displayName, photoURL)
+          if (auth.currentUser && auth.currentUser.uid === uid) {
+            try {
+              await updateFirebaseAuthProfile(auth.currentUser, {
+                displayName: trimmedName,
+                photoURL: trimmedAvatar || null,
+              });
+            } catch (authErr) {
+              console.warn("Firebase Auth profile update skipped:", authErr);
+            }
+          }
+
+          // 2. Firestore users/{uid} 문서 업데이트
+          const userDocRef = doc(db, "users", uid);
+          await setDoc(
+            userDocRef,
+            {
+              uid,
+              name: trimmedName,
+              displayName: trimmedName,
+              displayNameLower: trimmedName.toLowerCase(),
+              bio: trimmedBio,
+              avatarUrl: trimmedAvatar,
+              photoURL: trimmedAvatar || null,
+              headerTitle: trimmedHeaderTitle,
+              email: currentUser.email ?? state.profile.email ?? null,
+              updatedAt: now,
+            },
+            { merge: true }
+          );
+
+          // 3. 선택적 displayNames 인덱스 컬렉션 동기화 (권한 허용 시)
+          try {
+            const newNormalized = encodeURIComponent(trimmedName.toLowerCase());
+            await setDoc(doc(db, "displayNames", newNormalized), {
+              uid,
+              displayName: trimmedName,
+              updatedAt: now,
+            });
+            if (
+              previousName &&
+              previousName.toLowerCase() !== trimmedName.toLowerCase()
+            ) {
+              const oldNormalized = encodeURIComponent(
+                previousName.toLowerCase()
+              );
+              await deleteDoc(doc(db, "displayNames", oldNormalized)).catch(
+                () => {}
+              );
+            }
+          } catch {
+            // displayNames 컬렉션 규칙 미설정 시 무시
+          }
+
+          const nextProfile: MyLinkProfileData = {
+            ...state.profile,
+            id: uid,
+            uid,
+            name: trimmedName,
+            handle: `@${trimmedName}`,
+            bio: trimmedBio,
+            avatarUrl: trimmedAvatar,
+            headerTitle: trimmedHeaderTitle,
+            email: currentUser.email ?? state.profile.email,
+            updatedAt: now,
+          };
+
+          const nextUser: MyLinkAuthUser = {
+            ...currentUser,
+            displayName: trimmedName,
+            photoURL: trimmedAvatar || null,
+          };
+
+          set({
+            profile: nextProfile,
+            currentUser: nextUser,
+          });
+
+          return nextProfile;
+        } finally {
+          set({ isUpdatingProfile: false });
+        }
+      },
 
       setSocialBadges: (socialBadges) => set({ socialBadges }),
 
