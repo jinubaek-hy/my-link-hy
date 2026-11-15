@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import mockResponse from "@/mocks/mylink-mock.json";
 
-export const dynamic = "force-static";
 
 /**
  * GET /api/links
