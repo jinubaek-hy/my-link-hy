@@ -3,9 +3,13 @@
 import {
   addDoc,
   collection,
+  deleteDoc,
+  doc,
   getDocs,
   orderBy,
   query,
+  setDoc,
+  updateDoc,
 } from "firebase/firestore";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
@@ -22,6 +26,7 @@ import {
   MyLinkData,
   MyLinkProfileData,
   SocialBadgeItem,
+  UpdateLinkInput,
 } from "@/types/mylink";
 
 /** Firestore 링크 저장 컬렉션 경로: users/anonymous/links */
@@ -32,6 +37,7 @@ export const FIRESTORE_LINKS_COLLECTION_PATH = [
 ] as const;
 
 const DEFAULT_SEED_LINK_IDS = new Set(DUMMY_FLAT_LINKS.map((link) => link.id));
+const DELETED_SEED_LINK_IDS = new Set<string>();
 
 function parseTimestamp(value: unknown): string | undefined {
   if (typeof value === "string" && value.trim().length > 0) {
@@ -68,11 +74,15 @@ export interface MyLinkStore extends MyLinkData {
   hasHydrated: boolean;
   isSyncingLinks: boolean;
   isAddingLink: boolean;
+  isUpdatingLink: boolean;
+  isDeletingLink: boolean;
   setHasHydrated: (hydrated: boolean) => void;
   updateProfile: (partial: Partial<MyLinkProfileData>) => void;
   setSocialBadges: (badges: SocialBadgeItem[]) => void;
   setLinkSections: (sections: LinkSectionItem[]) => void;
   addLink: (input: AddLinkInput) => Promise<LinkCardItem>;
+  updateLink: (id: string, input: UpdateLinkInput) => Promise<LinkCardItem>;
+  deleteLink: (id: string) => Promise<void>;
   syncLinksFromFirestore: () => Promise<void>;
   resetToDefault: () => void;
 }
@@ -84,6 +94,8 @@ export const useMyLinkStore = create<MyLinkStore>()(
       hasHydrated: false,
       isSyncingLinks: false,
       isAddingLink: false,
+      isUpdatingLink: false,
+      isDeletingLink: false,
 
       setHasHydrated: (hydrated) => set({ hasHydrated: hydrated }),
 
@@ -152,6 +164,109 @@ export const useMyLinkStore = create<MyLinkStore>()(
         }
       },
 
+      updateLink: async (id, input) => {
+        set({ isUpdatingLink: true });
+        try {
+          const state = get();
+          const fallbackSectionId =
+            state.linkSections[0]?.id ?? "section-projects";
+
+          let existingLink: LinkCardItem | undefined;
+          let existingSectionId: string | undefined;
+
+          for (const section of state.linkSections) {
+            const found = section.links.find((l) => l.id === id);
+            if (found) {
+              existingLink = found;
+              existingSectionId = found.sectionId ?? section.id;
+              break;
+            }
+          }
+
+          const requestedSectionId =
+            input.sectionId ?? existingSectionId ?? fallbackSectionId;
+          const targetSectionId = state.linkSections.some(
+            (section) => section.id === requestedSectionId
+          )
+            ? requestedSectionId
+            : fallbackSectionId;
+
+          const now = new Date().toISOString();
+          const updateFields = {
+            sectionId: targetSectionId,
+            emoji: input.emoji.trim() || "🔗",
+            title: input.title.trim(),
+            description:
+              input.description.trim() || "클릭하여 해당 링크로 이동합니다",
+            href: input.href.trim(),
+            enabled: input.enabled ?? existingLink?.enabled ?? true,
+            updatedAt: now,
+          };
+
+          const linkDocRef = doc(
+            db,
+            FIRESTORE_LINKS_COLLECTION_PATH[0],
+            FIRESTORE_LINKS_COLLECTION_PATH[1],
+            FIRESTORE_LINKS_COLLECTION_PATH[2],
+            id
+          );
+
+          try {
+            await updateDoc(linkDocRef, updateFields);
+          } catch {
+            // 시드 링크 등 아직 Firestore 문서가 없는 경우 동일 경로(users/anonymous/links/{id})에 생성/병합
+            await setDoc(
+              linkDocRef,
+              {
+                ...updateFields,
+                order: existingLink?.order ?? 1,
+                clickCount: existingLink?.clickCount ?? 0,
+                createdAt: existingLink?.createdAt ?? now,
+              },
+              { merge: true }
+            );
+          }
+
+          const updatedLink: LinkCardItem = {
+            id,
+            order: existingLink?.order ?? 1,
+            clickCount: existingLink?.clickCount ?? 0,
+            createdAt: existingLink?.createdAt ?? now,
+            ...updateFields,
+          };
+
+          // 실시간 구독(onSnapshot) 대신, 링크 수정 완료 후 Firestore에서 목록을 다시 조회(getDocs)하여 갱신
+          await get().syncLinksFromFirestore();
+
+          return updatedLink;
+        } finally {
+          set({ isUpdatingLink: false });
+        }
+      },
+
+      deleteLink: async (id) => {
+        set({ isDeletingLink: true });
+        try {
+          const linkDocRef = doc(
+            db,
+            FIRESTORE_LINKS_COLLECTION_PATH[0],
+            FIRESTORE_LINKS_COLLECTION_PATH[1],
+            FIRESTORE_LINKS_COLLECTION_PATH[2],
+            id
+          );
+
+          await deleteDoc(linkDocRef);
+          if (DEFAULT_SEED_LINK_IDS.has(id)) {
+            DELETED_SEED_LINK_IDS.add(id);
+          }
+
+          // 실시간 구독(onSnapshot) 대신, 링크 삭제 완료 후 Firestore에서 목록을 다시 조회(getDocs)하여 갱신
+          await get().syncLinksFromFirestore();
+        } finally {
+          set({ isDeletingLink: false });
+        }
+      },
+
       syncLinksFromFirestore: async () => {
         set({ isSyncingLinks: true });
         try {
@@ -206,6 +321,7 @@ export const useMyLinkStore = create<MyLinkStore>()(
               const preservedSeedLinks = section.links.filter(
                 (link) =>
                   DEFAULT_SEED_LINK_IDS.has(link.id) &&
+                  !DELETED_SEED_LINK_IDS.has(link.id) &&
                   !firestoreLinkIds.has(link.id)
               );
 

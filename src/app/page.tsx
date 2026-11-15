@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import {
   AddLinkButton,
   AddLinkDialog,
+  DeleteLinkDialog,
   LinkSection,
   ProfileHeroCard,
   ShareToast,
@@ -16,7 +17,7 @@ import {
   fetchMockMyLinkData,
 } from "@/lib/defaultData";
 import { useMyLinkStore } from "@/store/useMyLinkStore";
-import { AddLinkInput } from "@/types/mylink";
+import { AddLinkInput, LinkCardItem, UpdateLinkInput } from "@/types/mylink";
 
 export default function Home() {
   const store = useMyLinkStore();
@@ -26,6 +27,7 @@ export default function Home() {
   const [selectedSectionId, setSelectedSectionId] = useState<string | undefined>(
     undefined
   );
+  const [deletingLink, setDeletingLink] = useState<LinkCardItem | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = (message: string) => {
@@ -116,6 +118,22 @@ export default function Home() {
     showToast("새로운 링크를 추가했어요");
   };
 
+  const handleUpdateLink = async (id: string, input: UpdateLinkInput) => {
+    await store.updateLink(id, input);
+    showToast("링크 정보를 수정했어요");
+  };
+
+  const handleConfirmDeleteLink = async (link: LinkCardItem) => {
+    await store.deleteLink(link.id);
+    showToast(`"${link.title}" 링크를 삭제했어요`);
+  };
+
+  const isBusy =
+    store.isSyncingLinks ||
+    store.isAddingLink ||
+    store.isUpdatingLink ||
+    store.isDeletingLink;
+
   return (
     <div className="min-h-screen bg-background text-foreground pb-24">
       {/* TOP-01: 상단 앱 바 컴포넌트 */}
@@ -134,7 +152,7 @@ export default function Home() {
         <ProfileHeroCard profile={profile} socialBadges={socialBadges} />
 
         {/* Firestore 링크 조회 및 갱신 중 로딩 배너 */}
-        {(store.isSyncingLinks || store.isAddingLink) && (
+        {isBusy && (
           <div
             role="status"
             aria-live="polite"
@@ -147,16 +165,20 @@ export default function Home() {
             <span className="tds-label-s text-foreground">
               {store.isAddingLink
                 ? "새 링크를 저장하고 목록을 갱신하는 중이에요..."
-                : "Firestore에서 최신 링크 목록을 불러오는 중이에요..."}
+                : store.isUpdatingLink
+                  ? "링크 수정을 저장하고 목록을 갱신하는 중이에요..."
+                  : store.isDeletingLink
+                    ? "링크를 삭제하고 목록을 갱신하는 중이에요..."
+                    : "Firestore에서 최신 링크 목록을 불러오는 중이에요..."}
             </span>
           </div>
         )}
 
         {/* LINK-01 ~ LINK-02: 섹션별 링크 버튼 카드 리스트 컴포넌트 */}
         <div
-          aria-busy={store.isSyncingLinks || store.isAddingLink}
+          aria-busy={isBusy}
           className={
-            store.isSyncingLinks || store.isAddingLink
+            isBusy
               ? "space-y-7 opacity-60 transition-opacity duration-150"
               : "space-y-7 transition-opacity duration-150"
           }
@@ -165,6 +187,12 @@ export default function Home() {
             <LinkSection
               key={section.id}
               section={section}
+              sections={sortedSections}
+              deletingLinkId={
+                store.isDeletingLink ? deletingLink?.id : undefined
+              }
+              onUpdateLink={handleUpdateLink}
+              onDeleteRequest={(link) => setDeletingLink(link)}
             />
           ))}
         </div>
@@ -179,7 +207,17 @@ export default function Home() {
         onAddLink={handleAddLink}
       />
 
-      {/* 공유 및 링크 추가 완료 토스트 컴포넌트 */}
+      {/* 링크 삭제 확인 모달 (Firestore 연동) */}
+      <DeleteLinkDialog
+        open={Boolean(deletingLink)}
+        onOpenChange={(open) => {
+          if (!open) setDeletingLink(null);
+        }}
+        link={deletingLink}
+        onConfirmDelete={handleConfirmDeleteLink}
+      />
+
+      {/* 공유 및 링크 추가/수정/삭제 완료 토스트 컴포넌트 */}
       <ShareToast open={Boolean(toastMessage)} message={toastMessage} />
     </div>
   );

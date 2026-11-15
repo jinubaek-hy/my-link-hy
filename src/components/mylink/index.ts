@@ -5,3 +5,4 @@ export * from "./link-button-card";
 export * from "./link-section";
 export * from "./share-toast";
 export * from "./add-link-dialog";
+export * from "./delete-link-dialog";

@@ -30,6 +30,15 @@ export interface AddLinkInput {
   enabled?: boolean;
 }
 
+export interface UpdateLinkInput {
+  sectionId?: string;
+  emoji: string;
+  title: string;
+  description: string;
+  href: string;
+  enabled?: boolean;
+}
+
 export interface LinkSectionItem {
   id: string;
   emoji: string;

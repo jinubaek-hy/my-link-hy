@@ -74,7 +74,7 @@ export function AddLinkButton({
   );
 }
 
-const EMOJI_PRESETS = [
+export const EMOJI_PRESETS = [
   "🔗",
   "🎨",
   "💻",
@@ -89,9 +89,9 @@ const EMOJI_PRESETS = [
   "🎁",
 ] as const;
 
-const TITLE_MIN_LENGTH = 2;
-const TITLE_MAX_LENGTH = 40;
-const DESCRIPTION_MAX_LENGTH = 80;
+export const TITLE_MIN_LENGTH = 2;
+export const TITLE_MAX_LENGTH = 40;
+export const DESCRIPTION_MAX_LENGTH = 80;
 
 export interface AddLinkDialogProps {
   open: boolean;
@@ -210,7 +210,10 @@ export function isValidLinkUrl(rawUrl: string): {
   }
 }
 
-export function createAddLinkSchema(sections: LinkSectionItem[]) {
+export function createAddLinkSchema(
+  sections: LinkSectionItem[],
+  excludeLinkId?: string
+) {
   return z
     .object({
       sectionId: z.string().min(1, "카테고리 섹션을 선택해주세요."),
@@ -260,10 +263,14 @@ export function createAddLinkSchema(sections: LinkSectionItem[]) {
       const targetSection = sections.find((s) => s.id === values.sectionId);
       if (!targetSection) return;
 
+      const otherLinks = excludeLinkId
+        ? targetSection.links.filter((link) => link.id !== excludeLinkId)
+        : targetSection.links;
+
       const trimmedTitle = values.title.trim().toLowerCase();
       if (
         trimmedTitle &&
-        targetSection.links.some(
+        otherLinks.some(
           (link) => link.title.trim().toLowerCase() === trimmedTitle
         )
       ) {
@@ -277,7 +284,7 @@ export function createAddLinkSchema(sections: LinkSectionItem[]) {
       const urlCheck = isValidLinkUrl(values.href);
       if (
         urlCheck.valid &&
-        targetSection.links.some(
+        otherLinks.some(
           (link) =>
             normalizeUrl(link.href).toLowerCase() ===
             urlCheck.normalized.toLowerCase()
@@ -672,7 +679,7 @@ function AddLinkForm({
           )}
         </div>
         <div className="pointer-events-none select-none">
-          <LinkButtonCard link={previewLink} tabIndex={-1} />
+          <LinkButtonCard link={previewLink} tabIndex={-1} showActions={false} />
         </div>
       </div>
 
@@ -696,7 +703,7 @@ function AddLinkForm({
           ) : (
             <Plus className="size-4" strokeWidth={2.2} />
           )}
-          {isSubmitting ? "저장 및 목록 갱신 중..." : "링크 추가하기"}
+          <span>링크 추가하기</span>
         </Button>
       </DialogFooter>
     </Form>
@@ -710,9 +717,25 @@ export function AddLinkDialog({
   defaultSectionId,
   onAddLink,
 }: AddLinkDialogProps) {
+  const [isSubmittingForm, setIsSubmittingForm] = React.useState(false);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (isSubmittingForm && !nextOpen) return;
+    onOpenChange(nextOpen);
+  };
+
+  const handleAddLinkWithLock = async (input: AddLinkInput) => {
+    setIsSubmittingForm(true);
+    try {
+      await onAddLink(input);
+    } finally {
+      setIsSubmittingForm(false);
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent showCloseButton={!isSubmittingForm}>
         <DialogHeader>
           <DialogTitle>새 링크 추가</DialogTitle>
           <DialogDescription>
@@ -725,7 +748,7 @@ export function AddLinkDialog({
             key={defaultSectionId ?? "default"}
             sections={sections}
             defaultSectionId={defaultSectionId}
-            onAddLink={onAddLink}
+            onAddLink={handleAddLinkWithLock}
             onClose={() => onOpenChange(false)}
           />
         )}

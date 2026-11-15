@@ -4,16 +4,31 @@ import { LinkButtonCard } from "@/components/mylink/link-button-card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { sortLinksByCreatedAtDesc } from "@/store/useMyLinkStore";
-import { LinkSectionItem } from "@/types/mylink";
+import {
+  LinkCardItem,
+  LinkSectionItem,
+  UpdateLinkInput,
+} from "@/types/mylink";
 
 export interface LinkSectionProps extends React.ComponentProps<"section"> {
   section: LinkSectionItem;
+  sections?: LinkSectionItem[];
+  deletingLinkId?: string;
   onAddLink?: (sectionId: string) => void;
+  onUpdateLink?: (
+    id: string,
+    input: UpdateLinkInput
+  ) => Promise<unknown> | void;
+  onDeleteRequest?: (link: LinkCardItem) => void;
 }
 
 export function LinkSection({
   section,
+  sections,
+  deletingLinkId,
   onAddLink,
+  onUpdateLink,
+  onDeleteRequest,
   className,
   ...props
 }: LinkSectionProps) {
@@ -58,7 +73,15 @@ export function LinkSection({
 
       <div className="space-y-3">
         {activeLinks.map((link) => (
-          <LinkButtonCard key={link.id} link={link} />
+          <LinkButtonCard
+            key={link.id}
+            link={link}
+            sectionId={section.id}
+            sections={sections}
+            isDeleting={deletingLinkId === link.id}
+            onUpdateLink={onUpdateLink}
+            onDeleteRequest={onDeleteRequest}
+          />
         ))}
       </div>
     </section>
