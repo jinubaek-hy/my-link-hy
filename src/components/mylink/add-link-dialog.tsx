@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircle2, Link2, Plus } from "lucide-react";
+import { CheckCircle2, Link2, Loader2, Plus } from "lucide-react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { LinkButtonCard } from "@/components/mylink/link-button-card";
@@ -98,7 +98,7 @@ export interface AddLinkDialogProps {
   onOpenChange: (open: boolean) => void;
   sections: LinkSectionItem[];
   defaultSectionId?: string;
-  onAddLink: (input: AddLinkInput) => void;
+  onAddLink: (input: AddLinkInput) => Promise<unknown> | void;
 }
 
 export function normalizeUrl(rawUrl: string): string {
@@ -297,7 +297,7 @@ export type AddLinkFormValues = z.infer<ReturnType<typeof createAddLinkSchema>>;
 interface AddLinkFormProps {
   sections: LinkSectionItem[];
   defaultSectionId?: string;
-  onAddLink: (input: AddLinkInput) => void;
+  onAddLink: (input: AddLinkInput) => Promise<unknown> | void;
   onClose: () => void;
 }
 
@@ -308,6 +308,7 @@ function AddLinkForm({
   onClose,
 }: AddLinkFormProps) {
   const fallbackSectionId = sections[0]?.id ?? "section-projects";
+  const [submitError, setSubmitError] = React.useState<string | null>(null);
 
   const schema = React.useMemo(
     () => createAddLinkSchema(sections),
@@ -319,7 +320,7 @@ function AddLinkForm({
     handleSubmit,
     setValue,
     trigger,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<AddLinkFormValues>({
     resolver: zodResolver(schema),
     mode: "onTouched",
@@ -344,20 +345,28 @@ function AddLinkForm({
 
   const urlCheck = React.useMemo(() => isValidLinkUrl(href), [href]);
 
-  const onValidSubmit = (values: AddLinkFormValues) => {
+  const onValidSubmit = async (values: AddLinkFormValues) => {
+    setSubmitError(null);
     const normalizedHref = isValidLinkUrl(values.href).normalized;
 
-    onAddLink({
-      sectionId: values.sectionId || fallbackSectionId,
-      emoji: values.emoji.trim() || "🔗",
-      title: values.title.trim(),
-      description:
-        values.description.trim() || "클릭하여 해당 링크로 이동합니다",
-      href: normalizedHref,
-      enabled: values.enabled,
-    });
+    try {
+      await onAddLink({
+        sectionId: values.sectionId || fallbackSectionId,
+        emoji: values.emoji.trim() || "🔗",
+        title: values.title.trim(),
+        description:
+          values.description.trim() || "클릭하여 해당 링크로 이동합니다",
+        href: normalizedHref,
+        enabled: values.enabled,
+      });
 
-    onClose();
+      onClose();
+    } catch (err) {
+      console.error("Failed to save link to Firestore:", err);
+      setSubmitError(
+        "Firestore 저장 중 오류가 발생했어요. 잠시 후 다시 시도해주세요."
+      );
+    }
   };
 
   const previewLink = {
@@ -667,17 +676,27 @@ function AddLinkForm({
         </div>
       </div>
 
+      {submitError && (
+        <p role="alert" className="tds-caption text-destructive">
+          {submitError}
+        </p>
+      )}
+
       <DialogFooter className="pt-1">
         <DialogClose
           render={
-            <Button type="button" variant="secondary">
+            <Button type="button" variant="secondary" disabled={isSubmitting}>
               취소
             </Button>
           }
         />
-        <Button type="submit" variant="default">
-          <Plus className="size-4" strokeWidth={2.2} />
-          링크 추가하기
+        <Button type="submit" variant="default" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <Loader2 className="size-4 animate-spin" strokeWidth={2.2} />
+          ) : (
+            <Plus className="size-4" strokeWidth={2.2} />
+          )}
+          {isSubmitting ? "저장 및 목록 갱신 중..." : "링크 추가하기"}
         </Button>
       </DialogFooter>
     </Form>
@@ -697,7 +716,7 @@ export function AddLinkDialog({
         <DialogHeader>
           <DialogTitle>새 링크 추가</DialogTitle>
           <DialogDescription>
-            프로필 페이지에 노출할 새로운 링크 카드를 추가합니다. (브라우저 로컬 상태에 즉시 저장됩니다)
+            프로필 페이지에 노출할 새로운 링크 카드를 추가합니다. (Firestore users/anonymous/links에 저장됩니다)
           </DialogDescription>
         </DialogHeader>
 

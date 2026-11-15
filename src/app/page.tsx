@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Loader2 } from "lucide-react";
 import {
   AddLinkButton,
   AddLinkDialog,
@@ -62,20 +63,13 @@ export default function Home() {
           hasHydrated: true,
         });
       }
+
+      await useMyLinkStore.getState().syncLinksFromFirestore();
     };
 
     void syncInitialMockData();
 
-    // 다른 탭이나 개발자 도구에서 LocalStorage 변경 시 즉시 동기화
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === LOCAL_STORAGE_KEY) {
-        useMyLinkStore.persist.rehydrate();
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
     return () => {
-      window.removeEventListener("storage", handleStorageChange);
       if (toastTimerRef.current) {
         clearTimeout(toastTimerRef.current);
       }
@@ -117,8 +111,8 @@ export default function Home() {
     setIsAddDialogOpen(true);
   };
 
-  const handleAddLink = (input: AddLinkInput) => {
-    store.addLink(input);
+  const handleAddLink = async (input: AddLinkInput) => {
+    await store.addLink(input);
     showToast("새로운 링크를 추가했어요");
   };
 
@@ -139,8 +133,34 @@ export default function Home() {
         {/* PROF-01 ~ PROF-03: 중앙 프로필 카드 & 소셜 배지 컴포넌트 */}
         <ProfileHeroCard profile={profile} socialBadges={socialBadges} />
 
+        {/* Firestore 링크 조회 및 갱신 중 로딩 배너 */}
+        {(store.isSyncingLinks || store.isAddingLink) && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex items-center justify-center gap-2.5 rounded-2xl border border-border bg-card px-4 py-3 text-muted-foreground shadow-tds-1"
+          >
+            <Loader2
+              className="size-4 animate-spin text-primary shrink-0"
+              strokeWidth={2.4}
+            />
+            <span className="tds-label-s text-foreground">
+              {store.isAddingLink
+                ? "새 링크를 저장하고 목록을 갱신하는 중이에요..."
+                : "Firestore에서 최신 링크 목록을 불러오는 중이에요..."}
+            </span>
+          </div>
+        )}
+
         {/* LINK-01 ~ LINK-02: 섹션별 링크 버튼 카드 리스트 컴포넌트 */}
-        <div className="space-y-7">
+        <div
+          aria-busy={store.isSyncingLinks || store.isAddingLink}
+          className={
+            store.isSyncingLinks || store.isAddingLink
+              ? "space-y-7 opacity-60 transition-opacity duration-150"
+              : "space-y-7 transition-opacity duration-150"
+          }
+        >
           {visibleSections.map((section) => (
             <LinkSection
               key={section.id}

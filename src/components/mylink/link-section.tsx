@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import { LinkButtonCard } from "@/components/mylink/link-button-card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { sortLinksByCreatedAtDesc } from "@/store/useMyLinkStore";
 import { LinkSectionItem } from "@/types/mylink";
 
 export interface LinkSectionProps extends React.ComponentProps<"section"> {
@@ -16,9 +17,9 @@ export function LinkSection({
   className,
   ...props
 }: LinkSectionProps) {
-  const activeLinks = [...section.links]
-    .filter((link) => link.enabled)
-    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const activeLinks = sortLinksByCreatedAtDesc(
+    section.links.filter((link) => link.enabled)
+  );
 
   if (!section.enabled || activeLinks.length === 0) {
     return null;
