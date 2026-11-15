@@ -102,6 +102,7 @@ function InlineEditLinkForm({
   const onValidSubmit = async (values: AddLinkFormValues) => {
     setSubmitError(null);
     const normalizedHref = isValidLinkUrl(values.href).normalized;
+    const now = new Date().toISOString();
 
     try {
       await onSave({
@@ -112,6 +113,7 @@ function InlineEditLinkForm({
           values.description.trim() || "클릭하여 해당 링크로 이동합니다",
         href: normalizedHref,
         enabled: values.enabled,
+        updatedAt: now,
       });
     } catch (err) {
       console.error("Failed to update link in Firestore:", err);

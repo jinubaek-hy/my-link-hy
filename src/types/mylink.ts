@@ -37,6 +37,7 @@ export interface UpdateLinkInput {
   description: string;
   href: string;
   enabled?: boolean;
+  updatedAt?: string;
 }
 
 export interface LinkSectionItem {
@@ -48,8 +49,17 @@ export interface LinkSectionItem {
   links: LinkCardItem[];
 }
 
+export interface MyLinkAuthUser {
+  uid: string;
+  displayName: string | null;
+  email: string | null;
+  photoURL: string | null;
+}
+
 export interface MyLinkProfileData {
   id?: string;
+  uid?: string;
+  email?: string;
   handle?: string;
   headerTitle: string;
   avatarUrl: string;

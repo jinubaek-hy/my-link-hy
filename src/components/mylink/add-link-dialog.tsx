@@ -26,6 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { useMyLinkStore } from "@/store/useMyLinkStore";
 import { AddLinkInput, LinkSectionItem } from "@/types/mylink";
 
 export interface AddLinkButtonProps
@@ -717,6 +718,7 @@ export function AddLinkDialog({
   defaultSectionId,
   onAddLink,
 }: AddLinkDialogProps) {
+  const currentUser = useMyLinkStore((state) => state.currentUser);
   const [isSubmittingForm, setIsSubmittingForm] = React.useState(false);
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -733,13 +735,17 @@ export function AddLinkDialog({
     }
   };
 
+  const firestorePathText = currentUser?.uid
+    ? `users/${currentUser.uid}/links`
+    : "users/{user.uid}/links";
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent showCloseButton={!isSubmittingForm}>
         <DialogHeader>
           <DialogTitle>새 링크 추가</DialogTitle>
           <DialogDescription>
-            프로필 페이지에 노출할 새로운 링크 카드를 추가합니다. (Firestore users/anonymous/links에 저장됩니다)
+            프로필 페이지에 노출할 새로운 링크 카드를 추가합니다. (Firestore {firestorePathText}에 저장됩니다)
           </DialogDescription>
         </DialogHeader>
 

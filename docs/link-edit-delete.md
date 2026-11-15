@@ -109,7 +109,8 @@ sequenceDiagram
   - `onSnapshot` 실시간 리스너를 사용하지 않습니다.
   - 링크 추가(`addLink`)와 동일하게 Firestore 문서 쓰기/삭제 완료 후 `await get().syncLinksFromFirestore()`를 호출해 `getDocs(query(linksColRef, orderBy("createdAt", "desc")))`로 최신 목록을 다시 받아와 화면을 갱신합니다.
 - **`updateLink(id, input)`**:
-  - `doc(db, "users", "anonymous", "links", id)` 참조를 생성하여 `updateDoc`으로 필드를 갱신합니다. (초기 시드 데이터 등 Firestore 문서가 아직 없는 항목은 동일 경로에 `setDoc(..., { merge: true })`로 저장합니다.)
+  - 수정된 시각을 기록하기 위해 `updatedAt: new Date().toISOString()`(ISO 8601 포맷) 필드를 함께 포함하여 저장합니다.
+  - `doc(db, "users", "anonymous", "links", id)` 참조를 생성하여 `updateDoc`으로 필드(`sectionId`, `emoji`, `title`, `description`, `href`, `enabled`, `updatedAt`)를 갱신합니다. (초기 시드 데이터 등 Firestore 문서가 아직 없는 항목은 동일 경로에 `setDoc(..., { merge: true })`로 저장합니다.)
   - Firestore 수정 완료 후 `syncLinksFromFirestore()`를 호출하여 최신 목록을 다시 조회(갱신)합니다.
 - **`deleteLink(id)`**:
   - `doc(db, "users", "anonymous", "links", id)` 참조를 생성하여 `deleteDoc`으로 문서를 삭제합니다.
